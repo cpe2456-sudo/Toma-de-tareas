@@ -1,0 +1,42 @@
+name: Compilar APK Nativo
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v3
+
+      - name: ☕ Configurar entorno Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📱 Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 🛠️ Instalar Cordova y herramientas de Android
+        run: |
+          npm install -g cordova
+          yes | sdkmanager --licenses || true
+
+      - name: 📦 Crear proyecto móvil y compilar APK
+        run: |
+          cordova create miApp com.control.escolar ControlEscolar
+          cd miApp
+          cordova platform add android
+          # Reemplazar la plantilla por tu index.html
+          cp ../index.html www/index.html
+          cordova build android --release
+
+      - name: 💾 Subir APK generado
+        uses: actions/upload-artifact@v3
+        with:
+          name: control-escolar-apk
+          path: miApp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
