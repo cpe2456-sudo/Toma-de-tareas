@@ -1,0 +1,37 @@
+name: Crear APK de Toma de Asistencia
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Crear proyecto y compilar APK
+        run: |
+          mkdir www && cp index.html www/
+          npm init -y
+          npm i @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          echo '{"appId":"com.controlescolar.c3","appName":"Control Escolar 3C","webDir":"www","server":{"androidScheme":"https"},"plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
+          npx cap add android
+          npx cap sync android
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#</manifest>#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/><uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/></manifest>#' $M
+          cd android
+          ./gradlew assembleRelease
+      - name: Subir APK generado
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-escolar-3c-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          
